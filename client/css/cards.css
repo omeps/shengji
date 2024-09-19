@@ -1,0 +1,48 @@
+.card {
+  position: absolute;
+  width: 10%;
+  aspect-ratio: 5 / 7;
+  border-radius: 6.6%;
+  font-size: 1vw;
+  font-family: sans-serif;
+  background-color: seashell;
+  box-sizing: border-box;
+  padding: 0.2em;
+  border: solid gray;
+  border-width: 0.2vw;
+  top: 1vw;
+  transition: top 0.1s ease;
+}
+
+.black {
+  color: black;
+}
+
+.red {
+  color: red;
+}
+
+.card:first-line {
+  font-size: 1.7vw;
+}
+
+.card:hover {
+  border-color: blue;
+  top: 0.7vw;
+}
+
+.selected {
+  top: -0.2vw;
+  border-color: black;
+}
+
+.selected:hover {
+  top: -0.4vw;
+  border-color: blue;
+}
+
+.back {
+  background-color: red;
+  height: 100%;
+  width: 100%;
+}
