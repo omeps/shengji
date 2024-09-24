@@ -4,3 +4,35 @@ div.hand {
   width: 100%;
   background-color: red;
 }
+
+body {
+  user-select: none;
+}
+
+div.trick_friend {
+  position: absolute;
+  left: 44%;
+  top: 0;
+  width: 100%;
+}
+
+div.trick_enemy_left {
+  position: absolute;
+  left: 5%;
+  top: 16vw;
+  width: 100%;
+}
+
+div.trick_enemy_right {
+  position: absolute;
+  left: 83%;
+  top: 16vw;
+  width: 100%;
+}
+
+div.trick_self {
+  position: absolute;
+  left: 44%;
+  top: 32vw;
+  width: 100%;
+}

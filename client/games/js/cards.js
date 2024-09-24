@@ -1,4 +1,5 @@
 function select_swap(id) {
+  console.log(id)
   document.getElementById(id).classList.toggle("selected")
 }
 const Suits = Object.freeze({
@@ -10,7 +11,6 @@ const Suits = Object.freeze({
   BLACK_JOKER: Symbol("BLACK_JOKER"),
 })
 function card_value (top_value,a) {
-  console.log(`(${a[1]},${a[2]})'s value is:`)
   switch (a[1]) {
     case top_value: var a_v = 57;break;
     case "A": var a_v = 14;break;
@@ -27,41 +27,45 @@ function card_value (top_value,a) {
     case Suits.HEART: var a = a_v + 14; break;
     case Suits.CLUB: var a = a_v; break;
   }
-  console.log(a)
   return a;
 }
 class handHolder {
   //!assumes id_prefix is GUARANTEED TO BE UNIQUE!!
-  constructor(hand,id_prefix) {
+  constructor(hand,id_prefix,selectable) {
     this.cards = []
     this.id_prefix = id_prefix
     this.dom = hand
+    if (selectable) {
+      this.classes = "selectable"
+      this.onclick = function(x) {return `select_swap('${x}')`;}
+    } else {
+      this.classes = ""
+      this.onclick = function(x){return "";}
+    }
   }
   insert(suit,value) {
-    let left = `${(this.cards.length * 2.0 + 0.5 )}%`
-    this.dom.insertAdjacentHTML("beforeend", card_new(suit, value, left, `${this.id_prefix}${this.cards.length}`))
+    let left = `${(this.cards.length * 2.0 )}%`
+    this.dom.insertAdjacentHTML("beforeend", card_new(suit, value, left, `${this.id_prefix}${this.cards.length}`,`${this.classes}`,this.onclick))
     this.cards.push([suit,value,`${this.id_prefix}${this.cards.length}`])
   }
   sort(top_value) {
     this.cards.sort(function(a,b) {return Math.sign(card_value(top_value,b)-card_value(top_value,a));})
     for(const [index,[suit,value,id]] of this.cards.entries()) {
       let card = document.getElementById(id)
-      card.style.left = `${(index * 2.0 + 0.5 )}%`
+      card.style.left = `${(index * 2.0 )}%`
       //push to top, bad hack
       this.dom.appendChild(card)
     }
   }
 }
-function card_new(suit, value, left, id) {
+function card_new(suit, value, left, id, classes,onclick) {
    
   switch (suit) {
     case Suits.DIAMOND: 
       var color = "red"
-      console.log("diamong")
       var suit_char = "♦"
       break
     case Suits.HEART: 
-      console.log("hart")
       var color = "red"
       var suit_char = "♥"
       break
@@ -85,6 +89,6 @@ function card_new(suit, value, left, id) {
       break
 
   }
-  return `<div id=${id} onclick="select_swap('${id}')"class="card ${color}" style="left:${left}">${value}<br> ${suit_char}</div>`;
+  return `<div id=${id} onclick="${onclick(id)}"class="card ${color} ${classes}" style="left:${left}">${value}<br> ${suit_char}</div>`;
   
 }
