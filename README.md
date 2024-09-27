@@ -5,4 +5,5 @@ server for playing shengji with friends!
 bash run.sh
 ```
 this will not capture input.
+*you must have redis to run.*
 
