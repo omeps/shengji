@@ -3,12 +3,12 @@ function select_swap(id) {
   document.getElementById(id).classList.toggle("selected")
 }
 const Suits = Object.freeze({
-  DIAMOND: Symbol("DIAMOND"),
-  HEART: Symbol("HEART"),
-  SPADE: Symbol("SPADE"),
-  CLUB: Symbol("CLUB"),
-  RED_JOKER: Symbol("RED_JOKER"),
-  BLACK_JOKER: Symbol("BLACK_JOKER"),
+  DIAMOND:"DIAMOND",
+  HEART: "HEART",
+  SPADE: "SPADE",
+  CLUB: "CLUB",
+  RED_JOKER: "RED_JOKER",
+  BLACK_JOKER: "BLACK_JOKER",
 })
 function card_value (top_value,a) {
   switch (a[1]) {
