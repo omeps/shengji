@@ -123,16 +123,19 @@ pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Res
 //
 pub fn main() {
   let secret_key = wisp.random_string(64)
+  io.println("key built")
   let assert Ok(client) = radish.start(
     "localhost",
     6379,
     [radish.Timeout(128),radish.Auth("19741297434")]
   )
+  io.println("client up")
   let assert Ok(_) = 
     fn(x) { http_service(x,client) }
     |> wisp_mist.handler(secret_key)
     |> mist.new()
     |> mist.port(8080)
     |> mist.start_http()
+  io.println("server up, sleeping")
   process.sleep_forever()
 }
