@@ -1,10 +1,8 @@
 # shengji server
 server for playing shengji with friends!
-* to run (interactive):
+* to run:
 ```sh
-gleam run
+bash run.sh
 ```
-* to run (in background):
-```sh 
-echo "" | gleam run&
-```
+this will not capture input.
+
