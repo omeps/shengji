@@ -1,3 +1,5 @@
+import gleam/dynamic
+import gleam/http
 import gleam/bit_array
 import rsa_keys
 import radish
@@ -10,11 +12,22 @@ import wisp.{type Request, type Response, Bytes}
 import gleam/http/response.{Response}
 import gleam/io
 import gleam/list
-import gleam/option.{Some,None}
+import gleam/option.{Some,None,type Option}
 import gleam/result
 import gleam/string
 import wisp/wisp_mist
+import gleam/json
 import mist
+pub fn query_param(query: Option(String), param: String) -> Option(String){
+    query |> option.map(fn(x) { x |> string.split(param <> "=") 
+        |> iterator.from_list() 
+        |> iterator.at(1)
+        |> result.map(fn(x) {x |> string.split("&") |> iterator.from_list() |> iterator.first() })
+        |> result.flatten()
+        |> result.map(fn(x) {Some(x)})
+        |> result.unwrap(None) }) 
+        |> option.flatten()
+}
 pub fn content_type(path: String) -> String {
   path
   |> string.split(".")
@@ -41,7 +54,7 @@ fn request_from_file(file_and_contype: Result(#(file_stream.FileStream,String),f
             #(bytes_builder.new(), content_type(""))
           })
 }
-pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Response {
+pub fn handle_get(re: Request, db_cli: process.Subject(radish.Message)) -> Response {
   let path =
     re.path
     |> fn(x) {
@@ -59,23 +72,11 @@ pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Res
       }
     }
   let is_get_gamestate =
-    re.query
-    |> option.map(fn(x) { x |> string.contains("game=") })
-    |> option.unwrap(False)
+    re.query |> query_param("game")
   let is_get_new_pass = 
-    re.query
-    |> option.map(fn(x) {
-      x |> string.split("new_uid=") 
-        |> iterator.from_list() 
-        |> iterator.at(1)
-        |> result.map(fn(x) {x |> string.split("&") |> iterator.from_list() |> iterator.first() })
-        |> result.flatten()
-        |> result.map(fn(x) {Some(x)})
-        |> result.unwrap(None)
-    })
-    |> option.flatten()
+    re.query |> query_param("new_uid")
   let #(body, contype) = case is_get_gamestate,is_get_new_pass {
-    False,None ->
+    None,None ->
           path
           |> file_stream.open_read()
           |> result.map(fn(x) { #(x, content_type(path)) })
@@ -84,7 +85,7 @@ pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Res
             |> result.map(fn(x) { #(x, content_type(".html")) }),
           )
           |> request_from_file()
-    True,None -> #(bytes_builder.from_string("{\"cards\": [
+    Some(_),None -> #(bytes_builder.from_string("{\"cards\": [
         [\"DIAMOND\",2],
         [\"DIAMOND\",3],
         [\"DIAMOND\",4],
@@ -95,8 +96,8 @@ pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Res
         [\"CLUB\",\"J\"],
         [\"BLACK_JOKER\",\"\"]
       ]}"),"application/json")
-    True,Some(_) -> file_stream.open_read("client/404.html") |> result.map(fn(x) { #(x, content_type(".html"))}) |> request_from_file()
-    False,Some(id) -> {
+    Some(_),Some(_) -> file_stream.open_read("client/404.html") |> result.map(fn(x) { #(x, content_type(".html"))}) |> request_from_file()
+    None,Some(id) -> {
       let content = radish.exists(db_cli, [id], 128) 
         |> result.map(fn(x) { 
           case x == 0 {
@@ -117,6 +118,25 @@ pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Res
   response.new(200)
   |> response.set_header("Content-Type", contype <> "; " <> "charset=utf8")
   |> response.set_body(Bytes(body))
+
+}
+pub fn handle_post(re: Request, db_cli: process.Subject(radish.Message)) -> Response {
+  let is_post_update = re.query |> query_param("gameupdate")
+  case is_post_update {
+    Some(game) -> {
+      let result = re |> wisp.read_body_to_bitstring() |> result.map(bit_array.to_string) |> result.flatten() |> result.map(fn(x) { x  |> json.decode(dynamic.dynamic) })
+      io.println(string.inspect(result))
+    }
+    None -> Nil
+  }
+  response.new(200)
+  |> response.set_body(Bytes(bytes_builder.new()))
+}
+pub fn http_service(re: Request, db_cli: process.Subject(radish.Message)) -> Response {
+  case re.method {
+    http.Post -> handle_post(re,db_cli)
+    _ -> handle_get(re,db_cli)  
+  }
 }
 
 // Start tit on port 3000 using the cowboy web server
@@ -127,7 +147,7 @@ pub fn main() {
   let assert Ok(client) = radish.start(
     "localhost",
     6379,
-    [radish.Timeout(128),radish.Auth("19741297434")]
+    [radish.Timeout(128)]
   )
   io.println("client up")
   let assert Ok(_) = 
@@ -135,7 +155,7 @@ pub fn main() {
     |> wisp_mist.handler(secret_key)
     |> mist.new()
     |> mist.port(8080)
-    |> mist.start_http()
+    |> mist.start_https("secrets/certificate.crt", "secrets/key.key")
   io.println("server up, sleeping")
   process.sleep_forever()
 }
